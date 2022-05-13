@@ -1,0 +1,50 @@
+# Set working environment --------------------------------------------------------------
+rm(list = ls())
+setwd("C:/Workspace/R")
+
+# Load required packages ---------------------------------------------------------------
+library(tidyverse)
+library(janitor)
+library(DESeq2)
+library(DEGreport)
+library(readr)
+
+# Load raw count matrix ----------------------------------------------------------------
+Raw_counts <- read.csv("Rawdata/Raw_counts.csv", header = T, row.names = 1)
+head(Raw_counts)
+
+# Load annotated ENSG matrix -----------------------------------------------------------
+ENSG <- read_csv("Rawdata/ENSG.csv")
+
+# Trim the raw data matrix -------------------------------------------------------------
+df_1 <- data.frame(Raw_counts[, 1:6])
+df_1 <- clean_names(df_1)
+head(df_1)
+
+# Create sample information martix -----------------------------------------------------
+S_info_1 <- c("1_NT", "1_NT", "1_NT", "2_Trt", "2_Trt", "2_TrT")
+S_info_1 <- data.frame("list" = S_info_1)
+head(S_info_1)
+
+# Raw count normalization --------------------------------------------------------------
+dds_1 <- DESeqDataSetFromMatrix(df_1, S_info_1, ~ list)
+keep_1 <- rowSums(counts(dds_1)) >= 10
+dds_1 <- dds_1[keep_1, ]
+ddsDE_1 <- DESeq(dds_1)
+NCs_1 <- counts(ddsDE_1, normalized = T)
+res_1 <- results(ddsDE_1, alpha = 0.05)
+summary(res_1)
+
+# Export normalized counts and DEG analysis result -------------------------------------
+write.csv(NCs_1, "Export/NCs.csv")
+write.csv(res_1, "Export/Res.csv")
+
+# Create annotated matrix ---------------------------------------------------------------
+NCs_annotated <- read_csv("Export/NCs.csv")
+Res_annotated <- read_csv("Export/Res.csv")
+NCs_annotated <- merge(NCs_annotated, ENSG, by.x = "...1", by.y = "ensembl_gene_id") %>% 
+  na.omit(NCs_annotated)
+Res_annotated <- merge(Res_annotated, ENSG, by.x = "...1", by.y = "ensembl_gene_id") %>% 
+  na.omit(Res_annotated)
+write.csv(NCs_annotated, "Export/NCs_annotated.csv")
+write.csv(Res_annotated, "Export/Res_annotated.csv")
