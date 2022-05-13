@@ -1,0 +1,17 @@
+## Export old packages
+# Set working environment
+rm(list = ls())
+setwd("C:/Workspace/R")
+
+# Save and create a list of installed packages 
+old_packages <- as.data.frame(installed.packages())
+write.csv(old_packages, "old_packages.csv")
+
+## Reinstall the old packages
+# Set working environment
+rm(list = ls())
+setwd("C:/Workspace/R")
+
+# Import and reinstall the old packages
+pre_packages <- read.csv("old_packages.csv")
+install.packages(pre_packages)
